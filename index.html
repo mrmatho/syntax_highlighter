@@ -351,7 +351,60 @@
 
     // ── Highlight and render ──────────────────────────────────────────────────
     function highlight(code) {
-      return hljs.highlight(code, { language: "python" }).value;
+      const hlHtml = hljs.highlight(code, { language: "python" }).value;
+      return tagVariables(hlHtml);
+    }
+
+    // Post-process highlighted HTML to tag untagged identifiers as variables.
+    // highlight.js Python grammar does not emit hljs-variable tokens, so we
+    // wrap root-level (untagged) identifiers in <span class="hljs-variable">.
+    const PYTHON_KEYWORDS = new Set([
+      "False","None","True","and","as","assert","async","await","break",
+      "class","continue","def","del","elif","else","except","finally","for",
+      "from","global","if","import","in","is","lambda","nonlocal","not","or",
+      "pass","raise","return","try","while","with","yield"
+    ]);
+
+    function tagVariables(html) {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = html;
+
+      // Only process root-level text nodes (text not already inside a
+      // highlight span) so we don't interfere with existing token styles.
+      const textNodes = Array.from(tmp.childNodes).filter(n => n.nodeType === Node.TEXT_NODE);
+
+      for (const tn of textNodes) {
+        const text = tn.textContent;
+        if (!/[a-zA-Z_]/.test(text)) continue;
+
+        const frag = document.createDocumentFragment();
+        let changed = false;
+        let last = 0;
+
+        for (const m of text.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g)) {
+          const ident = m[1];
+          const offset = m.index;
+          if (offset > last) frag.appendChild(document.createTextNode(text.slice(last, offset)));
+
+          if (!PYTHON_KEYWORDS.has(ident)) {
+            const span = document.createElement("span");
+            span.className = "hljs-variable";
+            span.textContent = ident;
+            frag.appendChild(span);
+            changed = true;
+          } else {
+            frag.appendChild(document.createTextNode(ident));
+          }
+          last = offset + ident.length;
+        }
+
+        if (changed) {
+          if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+          tn.parentNode.replaceChild(frag, tn);
+        }
+      }
+
+      return tmp.innerHTML;
     }
 
     function getSettings() {
