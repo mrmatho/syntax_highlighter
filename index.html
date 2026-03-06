@@ -371,8 +371,7 @@
 
       // Only process root-level text nodes (text not already inside a
       // highlight span) so we don't interfere with existing token styles.
-      const textNodes = [];
-      tmp.childNodes.forEach(n => { if (n.nodeType === Node.TEXT_NODE) textNodes.push(n); });
+      const textNodes = Array.from(tmp.childNodes).filter(n => n.nodeType === Node.TEXT_NODE);
 
       for (const tn of textNodes) {
         const text = tn.textContent;
@@ -382,7 +381,7 @@
         let changed = false;
         let last = 0;
 
-        for (const m of text.matchAll(/\b([a-zA-Z_]\w*)\b/g)) {
+        for (const m of text.matchAll(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g)) {
           const ident = m[1];
           const offset = m.index;
           if (offset > last) frag.appendChild(document.createTextNode(text.slice(last, offset)));
