@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Python Syntax Highlighter</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"
+  />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      padding: 1.5rem;
+      min-height: 100vh;
+    }
+
+    h1 { font-size: 1.5rem; margin-bottom: 1.25rem; color: #1a1a2e; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .panel h2 { font-size: 1rem; color: #444; border-bottom: 1px solid #eee; padding-bottom: 0.4rem; }
+
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      padding: 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      resize: vertical;
+      line-height: 1.5;
+      tab-size: 4;
+    }
+
+    textarea:focus { outline: none; border-color: #4a90d9; box-shadow: 0 0 0 2px #4a90d933; }
+
+    /* Settings */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem 1.25rem;
+    }
+
+    .setting-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .setting-row label { font-size: 0.8rem; font-weight: 600; color: #555; }
+
+    .setting-row input[type="text"],
+    .setting-row input[type="number"] {
+      padding: 0.35rem 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      width: 100%;
+    }
+
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .color-row input[type="color"] {
+      width: 34px;
+      height: 28px;
+      padding: 2px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .color-row .color-hex {
+      width: 76px;
+      padding: 0.3rem 0.4rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-family: monospace;
+    }
+
+    /* Preview */
+    .preview-wrap {
+      overflow: auto;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: #fff;
+      min-height: 220px;
+    }
+
+    .preview-wrap pre {
+      margin: 0;
+      padding: 0.75rem;
+    }
+
+    .preview-wrap pre code {
+      white-space: pre;
+    }
+
+    /* Output */
+    #output {
+      min-height: 120px;
+      font-size: 11px;
+      background: #fafafa;
+      color: #333;
+      resize: vertical;
+    }
+
+    .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+    button {
+      padding: 0.45rem 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+
+    #btn-highlight {
+      background: #4a90d9;
+      color: #fff;
+    }
+    #btn-highlight:hover { background: #357abd; }
+
+    #btn-copy {
+      background: #28a745;
+      color: #fff;
+    }
+    #btn-copy:hover { background: #218838; }
+    #btn-copy.copied { background: #888; }
+
+    #btn-reset-colors {
+      background: #e9ecef;
+      color: #444;
+    }
+    #btn-reset-colors:hover { background: #dee2e6; }
+
+    .notice {
+      font-size: 0.78rem;
+      color: #888;
+      margin-top: -0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐍 Python Syntax Highlighter</h1>
+
+  <div class="layout">
+
+    <!-- Left column: input + settings -->
+    <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+      <div class="panel">
+        <h2>Paste Python Code</h2>
+        <textarea id="input" spellcheck="false" placeholder="# Paste your Python code here&#10;def hello(name):&#10;    print(f'Hello, {name}!')"></textarea>
+        <div class="btn-row">
+          <button id="btn-highlight">Highlight →</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Settings</h2>
+        <div class="settings-grid">
+          <div class="setting-row">
+            <label for="font-family">Font Family</label>
+            <input type="text" id="font-family" value="Consolas" />
+          </div>
+          <div class="setting-row">
+            <label for="font-size">Font Size (px)</label>
+            <input type="number" id="font-size" value="14" min="6" max="72" />
+          </div>
+          <div class="setting-row">
+            <label for="bg-color">Background Color</label>
+            <div class="color-row">
+              <input type="color" id="bg-color" value="#ffffff" />
+              <input type="text" class="color-hex" id="bg-color-hex" value="#ffffff" maxlength="7" />
+            </div>
+          </div>
+          <div class="setting-row">
+            <label for="default-color">Default Text Color</label>
+            <div class="color-row">
+              <input type="color" id="default-color" value="#222222" />
+              <input type="text" class="color-hex" id="default-color-hex" value="#222222" maxlength="7" />
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:0.5rem;">
+          <div style="font-size:0.85rem;font-weight:600;color:#444;margin-bottom:0.5rem;">Token Colors</div>
+          <div class="settings-grid" id="token-colors"></div>
+        </div>
+        <div class="btn-row" style="margin-top:0.25rem;">
+          <button id="btn-reset-colors">Reset Colors</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right column: preview + HTML output -->
+    <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+      <div class="panel">
+        <h2>Preview</h2>
+        <div class="preview-wrap" id="preview-wrap">
+          <pre><code id="preview" class="language-python"></code></pre>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>HTML Output</h2>
+        <p class="notice" id="output-instructions">Copy the HTML below and paste it into your presentation editor (e.g. Google Slides HTML, Keynote web object, etc.)</p>
+        <textarea id="output" readonly spellcheck="false" aria-describedby="output-instructions" placeholder="Highlighted HTML will appear here after clicking Highlight →"></textarea>
+        <div class="btn-row">
+          <button id="btn-copy">Copy HTML</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ── Token definitions ────────────────────────────────────────────────────
+    const DEFAULT_TOKENS = [
+      { id: "keyword",   label: "Keywords",        color: "#0000ff", italic: false, bold: true  },
+      { id: "built_in",  label: "Built-ins",        color: "#008080", italic: false, bold: false },
+      { id: "string",    label: "Strings",          color: "#008000", italic: false, bold: false },
+      { id: "number",    label: "Numbers",          color: "#e06c00", italic: false, bold: false },
+      { id: "comment",   label: "Comments",         color: "#999999", italic: true,  bold: false },
+      { id: "decorator", label: "Decorators",       color: "#aa5500", italic: false, bold: false },
+      { id: "title",     label: "Function / Class", color: "#7b00d4", italic: false, bold: false },
+      { id: "params",    label: "Parameters",       color: "#444444", italic: false, bold: false },
+      { id: "operator",  label: "Operators",        color: "#555555", italic: false, bold: false },
+      { id: "punctuation", label: "Punctuation",    color: "#555555", italic: false, bold: false },
+      { id: "literal",   label: "Literals (True/False/None)", color: "#0055bb", italic: false, bold: true  },
+    ];
+
+    // Working copy (mutable)
+    let tokens = DEFAULT_TOKENS.map(t => ({ ...t }));
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function isValidHex(h) { return /^#[0-9a-fA-F]{6}$/.test(h); }
+
+    function syncColorInputs(colorId, hexId, value) {
+      const colorEl = document.getElementById(colorId);
+      const hexEl   = document.getElementById(hexId);
+      if (colorEl && isValidHex(value)) colorEl.value = value;
+      if (hexEl) hexEl.value = value;
+    }
+
+    function wireColorPair(colorId, hexId, onChange) {
+      const colorEl = document.getElementById(colorId);
+      const hexEl   = document.getElementById(hexId);
+      colorEl.addEventListener("input", () => {
+        hexEl.value = colorEl.value;
+        onChange(colorEl.value);
+      });
+      hexEl.addEventListener("input", () => {
+        if (isValidHex(hexEl.value)) {
+          colorEl.value = hexEl.value;
+          onChange(hexEl.value);
+        }
+      });
+      hexEl.addEventListener("change", () => {
+        if (!isValidHex(hexEl.value)) hexEl.value = colorEl.value;
+      });
+    }
+
+    // ── Build token color rows ────────────────────────────────────────────────
+    function buildTokenColorRows() {
+      const container = document.getElementById("token-colors");
+      container.innerHTML = "";
+      tokens.forEach(tok => {
+        const row = document.createElement("div");
+        row.className = "setting-row";
+        row.innerHTML = `
+          <label>${tok.label}</label>
+          <div class="color-row">
+            <input type="color" id="tok-${tok.id}" value="${tok.color}" />
+            <input type="text" class="color-hex" id="tok-${tok.id}-hex" value="${tok.color}" maxlength="7" />
+          </div>`;
+        container.appendChild(row);
+      });
+
+      tokens.forEach(tok => {
+        wireColorPair(`tok-${tok.id}`, `tok-${tok.id}-hex`, (val) => {
+          tok.color = val;
+          refreshPreview();
+        });
+      });
+    }
+
+    // ── Map highlight.js class names to token ids ─────────────────────────────
+    // highlight.js wraps tokens in <span class="hljs-*"> elements.
+    // We map those to our token ids.
+    const CLASS_MAP = {
+      "hljs-keyword":      "keyword",
+      "hljs-built_in":     "built_in",
+      "hljs-string":       "string",
+      "hljs-number":       "number",
+      "hljs-comment":      "comment",
+      "hljs-meta":         "decorator", // @decorator lines
+      "hljs-title":        "title",
+      "hljs-title function_": "title",
+      "hljs-params":       "params",
+      "hljs-operator":     "operator",
+      "hljs-punctuation":  "punctuation",
+      "hljs-literal":      "literal",
+      // additional aliases
+      "hljs-attr":         "params",
+      "hljs-variable":     "default",
+      "hljs-subst":        "string",   // f-string substitutions {var}
+    };
+
+    function tokenForClass(cls) {
+      const key = cls.trim();
+      const id  = CLASS_MAP[key];
+      return id ? tokens.find(t => t.id === id) : null;
+    }
+
+    // ── Highlight and render ──────────────────────────────────────────────────
+    function highlight(code) {
+      return hljs.highlight(code, { language: "python" }).value;
+    }
+
+    function getSettings() {
+      return {
+        fontFamily:    document.getElementById("font-family").value.trim() || "Consolas",
+        fontSize:      parseInt(document.getElementById("font-size").value, 10) || 14,
+        bgColor:       document.getElementById("bg-color").value,
+        defaultColor:  document.getElementById("default-color").value,
+      };
+    }
+
+    // Convert highlighted HTML (with hljs classes) → inline-styled HTML
+    function inlineStyle(hlHtml, settings) {
+      const { fontFamily, fontSize, bgColor, defaultColor } = settings;
+
+      // Use a temporary DOM element to walk the tree
+      const tmp = document.createElement("div");
+      tmp.innerHTML = hlHtml;
+
+      function styleNode(node) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const classList = Array.from(node.classList);
+          // Try each class combination (some tokens have two classes, e.g. "hljs-title function_")
+          let tok = null;
+          // Try the full joined class list first
+          const joined = classList.join(" ");
+          tok = tokenForClass(joined);
+          if (!tok) {
+            for (const c of classList) {
+              tok = tokenForClass(c);
+              if (tok) break;
+            }
+          }
+
+          let css = "";
+          if (tok) {
+            css += `color:${tok.color};`;
+            if (tok.bold)   css += "font-weight:bold;";
+            if (tok.italic) css += "font-style:italic;";
+          }
+          if (css) node.setAttribute("style", css);
+          // Remove class attributes from output
+          node.removeAttribute("class");
+          node.childNodes.forEach(styleNode);
+        }
+      }
+
+      tmp.childNodes.forEach(styleNode);
+
+      const innerHtml = tmp.innerHTML;
+      return `<pre style="background:${bgColor};padding:1em;border-radius:4px;overflow:auto;"><code style="font-family:${fontFamily},monospace;font-size:${fontSize}px;color:${defaultColor};white-space:pre;display:block;">${innerHtml}</code></pre>`;
+    }
+
+    // ── Live preview (uses CSS classes + dynamic <style>) ─────────────────────
+    function buildPreviewStyle(settings) {
+      const { fontFamily, fontSize, bgColor, defaultColor } = settings;
+      let css = `
+        #preview-wrap pre { background: ${bgColor}; }
+        #preview { font-family: ${fontFamily}, monospace; font-size: ${fontSize}px; color: ${defaultColor}; }
+      `;
+      tokens.forEach(tok => {
+        // highlight.js may assign multiple classes on one span
+        css += `#preview .hljs-${tok.id} { color: ${tok.color}; `;
+        if (tok.bold)   css += "font-weight:bold; ";
+        if (tok.italic) css += "font-style:italic; ";
+        css += "}\n";
+      });
+      // Special two-class selector for function names
+      css += `#preview .hljs-title.function_ { color: ${tokens.find(t=>t.id==="title")?.color ?? "#7b00d4"}; }\n`;
+      return css;
+    }
+
+    let styleTag = null;
+    function applyPreviewStyle(settings) {
+      if (!styleTag) {
+        styleTag = document.createElement("style");
+        document.head.appendChild(styleTag);
+      }
+      styleTag.textContent = buildPreviewStyle(settings);
+    }
+
+    function refreshPreview() {
+      const code = document.getElementById("input").value;
+      const settings = getSettings();
+      applyPreviewStyle(settings);
+
+      if (!code.trim()) {
+        document.getElementById("preview").innerHTML = "";
+        document.getElementById("output").value = "";
+        return;
+      }
+
+      const hlHtml = highlight(code);
+      document.getElementById("preview").innerHTML = hlHtml;
+
+      const html = inlineStyle(hlHtml, settings);
+      document.getElementById("output").value = html;
+    }
+
+    // ── Copy button ───────────────────────────────────────────────────────────
+    document.getElementById("btn-copy").addEventListener("click", () => {
+      const text = document.getElementById("output").value;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById("btn-copy");
+        btn.textContent = "✓ Copied!";
+        btn.classList.add("copied");
+        setTimeout(() => { btn.textContent = "Copy HTML"; btn.classList.remove("copied"); }, 1800);
+      });
+    });
+
+    // ── Highlight button ──────────────────────────────────────────────────────
+    document.getElementById("btn-highlight").addEventListener("click", refreshPreview);
+
+    // ── Also auto-highlight on Ctrl+Enter in textarea ─────────────────────────
+    document.getElementById("input").addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") refreshPreview();
+    });
+
+    // ── Settings change listeners ─────────────────────────────────────────────
+    ["font-family", "font-size"].forEach(id => {
+      document.getElementById(id).addEventListener("input", refreshPreview);
+    });
+
+    wireColorPair("bg-color", "bg-color-hex", refreshPreview);
+    wireColorPair("default-color", "default-color-hex", refreshPreview);
+
+    // ── Reset colors ──────────────────────────────────────────────────────────
+    document.getElementById("btn-reset-colors").addEventListener("click", () => {
+      tokens = DEFAULT_TOKENS.map(t => ({ ...t }));
+      buildTokenColorRows();
+      refreshPreview();
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    buildTokenColorRows();
+    applyPreviewStyle(getSettings());
+
+    // Pre-populate with a demo snippet
+    document.getElementById("input").value = `# Fibonacci sequence
+def fibonacci(n: int) -> list[int]:
+    """Return a list of the first n Fibonacci numbers."""
+    if n <= 0:
+        return []
+    seq = [0, 1]
+    while len(seq) < n:
+        seq.append(seq[-1] + seq[-2])
+    return seq[:n]
+
+@staticmethod
+def greet(name: str = "World") -> None:
+    print(f"Hello, {name}!")
+
+result = fibonacci(10)
+print(result)  # [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]`;
+
+    refreshPreview();
+  </script>
+</body>
+</html>
