@@ -160,6 +160,13 @@
     #btn-copy:hover { background: #218838; }
     #btn-copy.copied { background: #888; }
 
+    #btn-copy-formatted {
+      background: #6f42c1;
+      color: #fff;
+    }
+    #btn-copy-formatted:hover { background: #5a32a3; }
+    #btn-copy-formatted.copied { background: #888; }
+
     #btn-reset-colors {
       background: #e9ecef;
       color: #444;
@@ -234,6 +241,9 @@
         <h2>Preview</h2>
         <div class="preview-wrap" id="preview-wrap">
           <pre><code id="preview" class="language-python"></code></pre>
+        </div>
+        <div class="btn-row">
+          <button id="btn-copy-formatted">Copy Formatted</button>
         </div>
       </div>
 
@@ -514,6 +524,32 @@
         btn.classList.add("copied");
         setTimeout(() => { btn.textContent = "Copy HTML"; btn.classList.remove("copied"); }, 1800);
       });
+    });
+
+    // ── Copy Formatted button ─────────────────────────────────────────────────
+    function flashCopied(btn, label) {
+      btn.textContent = "✓ Copied!";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = label; btn.classList.remove("copied"); }, 1800);
+    }
+
+    document.getElementById("btn-copy-formatted").addEventListener("click", () => {
+      const html = document.getElementById("output").value;
+      if (!html) return;
+      const btn = document.getElementById("btn-copy-formatted");
+      if (typeof ClipboardItem !== "undefined") {
+        const htmlBlob  = new Blob([html], { type: "text/html" });
+        const plainBlob = new Blob([document.getElementById("preview").textContent], { type: "text/plain" });
+        const item = new ClipboardItem({ "text/html": htmlBlob, "text/plain": plainBlob });
+        navigator.clipboard.write([item])
+          .then(() => flashCopied(btn, "Copy Formatted"))
+          .catch(() => { btn.textContent = "Copy failed"; setTimeout(() => { btn.textContent = "Copy Formatted"; }, 1800); });
+      } else {
+        // Fallback for browsers that don't support ClipboardItem
+        navigator.clipboard.writeText(html)
+          .then(() => flashCopied(btn, "Copy Formatted"))
+          .catch(() => { btn.textContent = "Copy failed"; setTimeout(() => { btn.textContent = "Copy Formatted"; }, 1800); });
+      }
     });
 
     // ── Highlight button ──────────────────────────────────────────────────────
