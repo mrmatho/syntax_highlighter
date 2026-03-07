@@ -173,6 +173,19 @@
     }
     #btn-reset-colors:hover { background: #dee2e6; }
 
+    .btn-theme {
+      background: #e9ecef;
+      color: #444;
+      border: 1px solid #ccc;
+    }
+    .btn-theme:hover { background: #dee2e6; }
+    #btn-theme-dark   { background: #343a40; color: #f8f9fa; border-color: #23272b; }
+    #btn-theme-dark:hover { background: #23272b; }
+    #btn-theme-corporate { background: #0050af; color: #fff; border-color: #003d87; }
+    #btn-theme-corporate:hover { background: #003d87; }
+    #btn-theme-fun    { background: #6f2fa8; color: #f0e6ff; border-color: #5a2490; }
+    #btn-theme-fun:hover { background: #5a2490; }
+
     .notice {
       font-size: 0.78rem;
       color: #888;
@@ -230,6 +243,15 @@
         <div class="btn-row" style="margin-top:0.25rem;">
           <button id="btn-reset-colors">Reset Colors</button>
         </div>
+
+        <div style="margin-top:0.5rem;">
+          <div style="font-size:0.85rem;font-weight:600;color:#444;margin-bottom:0.5rem;">Quick Themes</div>
+          <div class="btn-row">
+            <button class="btn-theme" id="btn-theme-dark">Dark</button>
+            <button class="btn-theme" id="btn-theme-corporate">Corporate</button>
+            <button class="btn-theme" id="btn-theme-fun">Fun</button>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -278,6 +300,74 @@
 
     // Working copy (mutable)
     let tokens = DEFAULT_TOKENS.map(t => ({ ...t }));
+
+    // ── Quick theme presets ──────────────────────────────────────────────────
+    const THEMES = {
+      dark: {
+        bgColor: "#1e1e1e", defaultColor: "#d4d4d4",
+        tokens: {
+          keyword:     { color: "#569cd6", bold: true,  italic: false },
+          built_in:    { color: "#4ec9b0", bold: false, italic: false },
+          string:      { color: "#ce9178", bold: false, italic: false },
+          number:      { color: "#b5cea8", bold: false, italic: false },
+          comment:     { color: "#6a9955", bold: false, italic: true  },
+          decorator:   { color: "#dcdcaa", bold: false, italic: false },
+          title:       { color: "#dcdcaa", bold: false, italic: false },
+          params:      { color: "#9cdcfe", bold: false, italic: false },
+          operator:    { color: "#d4d4d4", bold: false, italic: false },
+          punctuation: { color: "#d4d4d4", bold: false, italic: false },
+          literal:     { color: "#569cd6", bold: true,  italic: false },
+          variable:    { color: "#9cdcfe", bold: false, italic: false },
+        }
+      },
+      corporate: {
+        bgColor: "#f8f9fa", defaultColor: "#212529",
+        tokens: {
+          keyword:     { color: "#0050af", bold: true,  italic: false },
+          built_in:    { color: "#005f73", bold: false, italic: false },
+          string:      { color: "#2d6a4f", bold: false, italic: false },
+          number:      { color: "#c77b00", bold: false, italic: false },
+          comment:     { color: "#6c757d", bold: false, italic: true  },
+          decorator:   { color: "#7c3e00", bold: false, italic: false },
+          title:       { color: "#4a0e8f", bold: false, italic: false },
+          params:      { color: "#343a40", bold: false, italic: false },
+          operator:    { color: "#495057", bold: false, italic: false },
+          punctuation: { color: "#495057", bold: false, italic: false },
+          literal:     { color: "#0050af", bold: true,  italic: false },
+          variable:    { color: "#6b2fbd", bold: false, italic: false },
+        }
+      },
+      fun: {
+        bgColor: "#2b213a", defaultColor: "#f0e6ff",
+        tokens: {
+          keyword:     { color: "#ff6eb4", bold: true,  italic: false },
+          built_in:    { color: "#79ffed", bold: false, italic: false },
+          string:      { color: "#ffe66d", bold: false, italic: false },
+          number:      { color: "#ff9a3c", bold: false, italic: false },
+          comment:     { color: "#a89bb9", bold: false, italic: true  },
+          decorator:   { color: "#ff6eb4", bold: false, italic: false },
+          title:       { color: "#79ffed", bold: false, italic: false },
+          params:      { color: "#f0e6ff", bold: false, italic: false },
+          operator:    { color: "#ff6eb4", bold: false, italic: false },
+          punctuation: { color: "#c3b1e1", bold: false, italic: false },
+          literal:     { color: "#ff9a3c", bold: true,  italic: false },
+          variable:    { color: "#c8ff74", bold: false, italic: false },
+        }
+      }
+    };
+
+    function applyTheme(name) {
+      const theme = THEMES[name];
+      if (!theme) return;
+      syncColorInputs("bg-color", "bg-color-hex", theme.bgColor);
+      syncColorInputs("default-color", "default-color-hex", theme.defaultColor);
+      tokens.forEach(tok => {
+        const th = theme.tokens[tok.id];
+        if (th) { tok.color = th.color; tok.bold = th.bold; tok.italic = th.italic; }
+      });
+      buildTokenColorRows();
+      refreshPreview();
+    }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
     function isValidHex(h) { return /^#[0-9a-fA-F]{6}$/.test(h); }
@@ -538,8 +628,13 @@
       if (!html) return;
       const btn = document.getElementById("btn-copy-formatted");
       if (typeof ClipboardItem !== "undefined") {
-        const htmlBlob  = new Blob([html], { type: "text/html" });
-        const plainBlob = new Blob([document.getElementById("preview").textContent], { type: "text/plain" });
+        // Replace newlines in text content with <br> so line breaks survive pasting
+        // into rich-text editors (Google Docs, Slides, Word, etc.) that don't honour
+        // white-space:pre. The negative-lookahead ensures we only replace newlines
+        // that appear outside HTML tag delimiters.
+        const clipboardHtml = html.replace(/\n(?![^<]*>)/g, "<br>");
+        const htmlBlob  = new Blob([clipboardHtml], { type: "text/html" });
+        const plainBlob = new Blob([document.getElementById("input").value], { type: "text/plain" });
         const item = new ClipboardItem({ "text/html": htmlBlob, "text/plain": plainBlob });
         navigator.clipboard.write([item])
           .then(() => flashCopied(btn, "Copy Formatted"))
@@ -573,6 +668,11 @@
       tokens = DEFAULT_TOKENS.map(t => ({ ...t }));
       buildTokenColorRows();
       refreshPreview();
+    });
+
+    // ── Theme buttons ─────────────────────────────────────────────────────────
+    ["dark", "corporate", "fun"].forEach(name => {
+      document.getElementById(`btn-theme-${name}`).addEventListener("click", () => applyTheme(name));
     });
 
     // ── Init ──────────────────────────────────────────────────────────────────
