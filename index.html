@@ -516,11 +516,10 @@
       };
     }
 
-    // Convert highlighted HTML (with hljs classes) → inline-styled HTML
-    function inlineStyle(hlHtml, settings) {
-      const { fontFamily, fontSize, bgColor, defaultColor } = settings;
-
-      // Use a temporary DOM element to walk the tree
+    // Apply inline color/weight styles to highlighted HTML (hljs classes → style attrs).
+    // Returns the inner HTML with all hljs class attributes removed and replaced
+    // by equivalent inline styles. Does NOT add any outer wrapper element.
+    function applyInlineStyles(hlHtml) {
       const tmp = document.createElement("div");
       tmp.innerHTML = hlHtml;
 
@@ -553,8 +552,14 @@
       }
 
       tmp.childNodes.forEach(styleNode);
+      return tmp.innerHTML;
+    }
 
-      const innerHtml = tmp.innerHTML;
+    // Convert highlighted HTML (with hljs classes) → inline-styled HTML
+    // wrapped in <pre><code> — suitable for HTML embed in Google Slides etc.
+    function inlineStyle(hlHtml, settings) {
+      const { fontFamily, fontSize, bgColor, defaultColor } = settings;
+      const innerHtml = applyInlineStyles(hlHtml);
       return `<pre style="background:${bgColor};padding:1em;border-radius:4px;overflow:auto;"><code style="font-family:${fontFamily},monospace;font-size:${fontSize}px;color:${defaultColor};white-space:pre;display:block;">${innerHtml}</code></pre>`;
     }
 
@@ -624,15 +629,20 @@
     }
 
     document.getElementById("btn-copy-formatted").addEventListener("click", () => {
-      const html = document.getElementById("output").value;
-      if (!html) return;
+      // Use the live preview innerHTML (hljs-class HTML) as the source so we can
+      // produce clipboard HTML with a <span> wrapper instead of <pre><code>.
+      // Block-level wrappers like <pre> cause PowerPoint to create a new text box
+      // rather than inserting content into an existing one.
+      const hlHtml = document.getElementById("preview").innerHTML;
+      if (!hlHtml) return;
       const btn = document.getElementById("btn-copy-formatted");
       if (typeof ClipboardItem !== "undefined") {
-        // Replace newlines in text content with <br> so line breaks survive pasting
-        // into rich-text editors (Google Docs, Slides, Word, etc.) that don't honour
-        // white-space:pre. The negative-lookahead ensures we only replace newlines
-        // that appear outside HTML tag delimiters.
-        const clipboardHtml = html.replace(/\n(?![^<]*>)/g, "<br>");
+        const { fontFamily, fontSize, bgColor, defaultColor } = getSettings();
+        // Apply inline styles and convert newlines to <br> so line breaks survive
+        // pasting into rich-text editors (PowerPoint, Google Slides, Word, etc.).
+        // The negative-lookahead avoids replacing newlines inside HTML tag delimiters.
+        const innerHtml = applyInlineStyles(hlHtml).replace(/\n(?![^<]*>)/g, "<br>");
+        const clipboardHtml = `<span style="font-family:${fontFamily},monospace;font-size:${fontSize}px;color:${defaultColor};background:${bgColor};">${innerHtml}</span>`;
         const htmlBlob  = new Blob([clipboardHtml], { type: "text/html" });
         const plainBlob = new Blob([document.getElementById("input").value], { type: "text/plain" });
         const item = new ClipboardItem({ "text/html": htmlBlob, "text/plain": plainBlob });
@@ -641,7 +651,7 @@
           .catch(() => { btn.textContent = "Copy failed"; setTimeout(() => { btn.textContent = "Copy Formatted"; }, 1800); });
       } else {
         // Fallback for browsers that don't support ClipboardItem
-        navigator.clipboard.writeText(html)
+        navigator.clipboard.writeText(document.getElementById("input").value)
           .then(() => flashCopied(btn, "Copy Formatted"))
           .catch(() => { btn.textContent = "Copy failed"; setTimeout(() => { btn.textContent = "Copy Formatted"; }, 1800); });
       }
