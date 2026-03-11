@@ -629,31 +629,28 @@
     }
 
     document.getElementById("btn-copy-formatted").addEventListener("click", () => {
-      // Use the live preview innerHTML (hljs-class HTML) as the source so we can
-      // produce clipboard HTML with a <span> wrapper instead of <pre><code>.
-      // Block-level wrappers like <pre> cause PowerPoint to create a new text box
-      // rather than inserting content into an existing one.
-      const hlHtml = document.getElementById("preview").innerHTML;
-      if (!hlHtml) return;
+      // Programmatically select the preview element and copy it — this produces
+      // exactly the same clipboard content as a manual select-all + copy, so the
+      // pasted result in PowerPoint / Google Slides / Keynote matches what the
+      // user sees in the preview (colours, bold, italic, font, background).
+      const previewEl = document.getElementById("preview");
+      if (!previewEl.innerHTML) return;
       const btn = document.getElementById("btn-copy-formatted");
-      if (typeof ClipboardItem !== "undefined") {
-        const { fontFamily, fontSize, bgColor, defaultColor } = getSettings();
-        // Apply inline styles and convert newlines to <br> so line breaks survive
-        // pasting into rich-text editors (PowerPoint, Google Slides, Word, etc.).
-        // The negative-lookahead avoids replacing newlines inside HTML tag delimiters.
-        const innerHtml = applyInlineStyles(hlHtml).replace(/\n(?![^<]*>)/g, "<br>");
-        const clipboardHtml = `<span style="font-family:${fontFamily},monospace;font-size:${fontSize}px;color:${defaultColor};background:${bgColor};">${innerHtml}</span>`;
-        const htmlBlob  = new Blob([clipboardHtml], { type: "text/html" });
-        const plainBlob = new Blob([document.getElementById("input").value], { type: "text/plain" });
-        const item = new ClipboardItem({ "text/html": htmlBlob, "text/plain": plainBlob });
-        navigator.clipboard.write([item])
-          .then(() => flashCopied(btn, "Copy Formatted"))
-          .catch(() => { btn.textContent = "Copy failed"; setTimeout(() => { btn.textContent = "Copy Formatted"; }, 1800); });
-      } else {
-        // Fallback for browsers that don't support ClipboardItem
-        navigator.clipboard.writeText(document.getElementById("input").value)
-          .then(() => flashCopied(btn, "Copy Formatted"))
-          .catch(() => { btn.textContent = "Copy failed"; setTimeout(() => { btn.textContent = "Copy Formatted"; }, 1800); });
+
+      const range = document.createRange();
+      range.selectNodeContents(previewEl);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      try {
+        document.execCommand("copy");
+        flashCopied(btn, "Copy Formatted");
+      } catch {
+        btn.textContent = "Copy failed";
+        setTimeout(() => { btn.textContent = "Copy Formatted"; }, 1800);
+      } finally {
+        sel.removeAllRanges();
       }
     });
 
