@@ -449,9 +449,22 @@
       return id ? tokens.find(t => t.id === id) : null;
     }
 
+    // ── Sanitize input code ───────────────────────────────────────────────────
+    // Normalises common pasted-text artefacts before highlighting:
+    //   • non-breaking spaces → regular spaces
+    //   • tab characters      → 4 regular spaces
+    //   • smart/curly quotes  → straight quotes
+    function sanitizeCode(code) {
+      return code
+        .replace(/\u00A0/g, " ")          // non-breaking space → space
+        .replace(/\t/g, "    ")            // tab → 4 spaces
+        .replace(/[\u201C\u201D]/g, '"')   // left/right double quotation marks → "
+        .replace(/[\u2018\u2019]/g, "'");  // left/right single quotation marks → '
+    }
+
     // ── Highlight and render ──────────────────────────────────────────────────
     function highlight(code) {
-      const hlHtml = hljs.highlight(code, { language: "python" }).value;
+      const hlHtml = hljs.highlight(sanitizeCode(code), { language: "python" }).value;
       return tagVariables(hlHtml);
     }
 
