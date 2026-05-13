@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Python Syntax Highlighter</title>
+  <title>Syntax Highlighter</title>
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css"
@@ -21,6 +21,26 @@
     }
 
     h1 { font-size: 1.5rem; margin-bottom: 1.25rem; color: #1a1a2e; }
+
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .tab-btn {
+      border: 1px solid #ccc;
+      background: #fff;
+      color: #333;
+      font-weight: 600;
+      padding: 0.4rem 0.9rem;
+    }
+
+    .tab-btn.active {
+      background: #4a90d9;
+      border-color: #357abd;
+      color: #fff;
+    }
 
     .layout {
       display: grid;
@@ -194,7 +214,11 @@
   </style>
 </head>
 <body>
-  <h1>🐍 Python Syntax Highlighter</h1>
+  <h1 id="app-title">Syntax Highlighter — Python</h1>
+  <div class="tabs" role="tablist" aria-label="Language Workspace Tabs">
+    <button class="tab-btn active" id="tab-python" data-language="python" role="tab" aria-selected="true">Python</button>
+    <button class="tab-btn" id="tab-html" data-language="html" role="tab" aria-selected="false">HTML</button>
+  </div>
 
   <div class="layout">
 
@@ -202,7 +226,7 @@
     <div style="display:flex;flex-direction:column;gap:1.25rem;">
 
       <div class="panel">
-        <h2>Paste Python Code</h2>
+        <h2 id="input-panel-title">Paste Python Code</h2>
         <textarea id="input" spellcheck="false" placeholder="# Paste your Python code here&#10;def hello(name):&#10;    print(f'Hello, {name}!')"></textarea>
         <div class="btn-row">
           <button id="btn-highlight">Highlight →</button>
@@ -237,7 +261,7 @@
         </div>
 
         <div style="margin-top:0.5rem;">
-          <div style="font-size:0.85rem;font-weight:600;color:#444;margin-bottom:0.5rem;">Token Colors</div>
+          <div id="token-colors-title" style="font-size:0.85rem;font-weight:600;color:#444;margin-bottom:0.5rem;">Python Token Colors</div>
           <div class="settings-grid" id="token-colors"></div>
         </div>
         <div class="btn-row" style="margin-top:0.25rem;">
@@ -282,94 +306,264 @@
   </div>
 
   <script>
-    // ── Token definitions ────────────────────────────────────────────────────
-    const DEFAULT_TOKENS = [
-      { id: "keyword",   label: "Keywords",        color: "#0000ff", italic: false, bold: true  },
-      { id: "built_in",  label: "Built-ins",        color: "#008080", italic: false, bold: false },
-      { id: "string",    label: "Strings",          color: "#008000", italic: false, bold: false },
-      { id: "number",    label: "Numbers",          color: "#e06c00", italic: false, bold: false },
-      { id: "comment",   label: "Comments",         color: "#999999", italic: true,  bold: false },
-      { id: "decorator", label: "Decorators",       color: "#aa5500", italic: false, bold: false },
-      { id: "title",     label: "Function / Class", color: "#7b00d4", italic: false, bold: false },
-      { id: "params",    label: "Parameters",       color: "#444444", italic: false, bold: false },
-      { id: "operator",  label: "Operators",        color: "#555555", italic: false, bold: false },
-      { id: "punctuation", label: "Punctuation",    color: "#555555", italic: false, bold: false },
-      { id: "literal",   label: "Literals (True/False/None)", color: "#0055bb", italic: false, bold: true  },
-      { id: "variable",  label: "Variables",                  color: "#800080", italic: false, bold: false },
-    ];
-
-    // Working copy (mutable)
-    let tokens = DEFAULT_TOKENS.map(t => ({ ...t }));
-
-    // ── Quick theme presets ──────────────────────────────────────────────────
-    const THEMES = {
-      dark: {
-        bgColor: "#1e1e1e", defaultColor: "#d4d4d4",
-        tokens: {
-          keyword:     { color: "#569cd6", bold: true,  italic: false },
-          built_in:    { color: "#4ec9b0", bold: false, italic: false },
-          string:      { color: "#ce9178", bold: false, italic: false },
-          number:      { color: "#b5cea8", bold: false, italic: false },
-          comment:     { color: "#6a9955", bold: false, italic: true  },
-          decorator:   { color: "#dcdcaa", bold: false, italic: false },
-          title:       { color: "#dcdcaa", bold: false, italic: false },
-          params:      { color: "#9cdcfe", bold: false, italic: false },
-          operator:    { color: "#d4d4d4", bold: false, italic: false },
-          punctuation: { color: "#d4d4d4", bold: false, italic: false },
-          literal:     { color: "#569cd6", bold: true,  italic: false },
-          variable:    { color: "#9cdcfe", bold: false, italic: false },
-        }
+    const LANGUAGE_CONFIG = {
+      python: {
+        label: "Python",
+        appTitle: "Syntax Highlighter — Python",
+        inputPanelTitle: "Paste Python Code",
+        tokenColorsTitle: "Python Token Colors",
+        placeholder: "# Paste your Python code here\ndef hello(name):\n    print(f'Hello, {name}!')",
+        demoSnippet: `# Hello, World!
+print("Hello, World!")`,
+        highlightLanguage: "python",
+        previewClass: "language-python",
+        useVariableTagging: true,
+        defaultTokens: [
+          { id: "keyword",   label: "Keywords",        color: "#0000ff", italic: false, bold: true  },
+          { id: "built_in",  label: "Built-ins",       color: "#008080", italic: false, bold: false },
+          { id: "string",    label: "Strings",         color: "#008000", italic: false, bold: false },
+          { id: "number",    label: "Numbers",         color: "#e06c00", italic: false, bold: false },
+          { id: "comment",   label: "Comments",        color: "#999999", italic: true,  bold: false },
+          { id: "decorator", label: "Decorators",      color: "#aa5500", italic: false, bold: false },
+          { id: "title",     label: "Function / Class",color: "#7b00d4", italic: false, bold: false },
+          { id: "params",    label: "Parameters",      color: "#444444", italic: false, bold: false },
+          { id: "operator",  label: "Operators",       color: "#555555", italic: false, bold: false },
+          { id: "punctuation", label: "Punctuation",   color: "#555555", italic: false, bold: false },
+          { id: "literal",   label: "Literals (True/False/None)", color: "#0055bb", italic: false, bold: true },
+          { id: "variable",  label: "Variables",       color: "#800080", italic: false, bold: false },
+        ],
+        classMap: {
+          "hljs-keyword":      "keyword",
+          "hljs-built_in":     "built_in",
+          "hljs-string":       "string",
+          "hljs-number":       "number",
+          "hljs-comment":      "comment",
+          "hljs-meta":         "decorator",
+          "hljs-title":        "title",
+          "hljs-title function_": "title",
+          "hljs-params":       "params",
+          "hljs-operator":     "operator",
+          "hljs-punctuation":  "punctuation",
+          "hljs-literal":      "literal",
+          "hljs-attr":         "params",
+          "hljs-variable":     "variable",
+          "hljs-subst":        "string",
+        },
       },
-      corporate: {
-        bgColor: "#f8f9fa", defaultColor: "#212529",
-        tokens: {
-          keyword:     { color: "#0050af", bold: true,  italic: false },
-          built_in:    { color: "#005f73", bold: false, italic: false },
-          string:      { color: "#2d6a4f", bold: false, italic: false },
-          number:      { color: "#c77b00", bold: false, italic: false },
-          comment:     { color: "#6c757d", bold: false, italic: true  },
-          decorator:   { color: "#7c3e00", bold: false, italic: false },
-          title:       { color: "#4a0e8f", bold: false, italic: false },
-          params:      { color: "#343a40", bold: false, italic: false },
-          operator:    { color: "#495057", bold: false, italic: false },
-          punctuation: { color: "#495057", bold: false, italic: false },
-          literal:     { color: "#0050af", bold: true,  italic: false },
-          variable:    { color: "#6b2fbd", bold: false, italic: false },
-        }
-      },
-      fun: {
-        bgColor: "#2b213a", defaultColor: "#f0e6ff",
-        tokens: {
-          keyword:     { color: "#ff6eb4", bold: true,  italic: false },
-          built_in:    { color: "#79ffed", bold: false, italic: false },
-          string:      { color: "#ffe66d", bold: false, italic: false },
-          number:      { color: "#ff9a3c", bold: false, italic: false },
-          comment:     { color: "#a89bb9", bold: false, italic: true  },
-          decorator:   { color: "#ff6eb4", bold: false, italic: false },
-          title:       { color: "#79ffed", bold: false, italic: false },
-          params:      { color: "#f0e6ff", bold: false, italic: false },
-          operator:    { color: "#ff6eb4", bold: false, italic: false },
-          punctuation: { color: "#c3b1e1", bold: false, italic: false },
-          literal:     { color: "#ff9a3c", bold: true,  italic: false },
-          variable:    { color: "#c8ff74", bold: false, italic: false },
-        }
+      html: {
+        label: "HTML",
+        appTitle: "Syntax Highlighter — HTML",
+        inputPanelTitle: "Paste HTML Code",
+        tokenColorsTitle: "HTML/CSS/JS Token Colors",
+        placeholder: "<!-- Paste your HTML code here -->\n<div class=\"card\">Hello</div>",
+        demoSnippet: `<div class="card">
+  <h2>Hello, world!</h2>
+  <p id="msg">Paste me into slides.</p>
+</div>
+
+<style>
+  .card { color: #336699; font-weight: bold; }
+</style>
+
+<script>
+  const msg = document.getElementById("msg");
+  if (msg) msg.textContent = "Embedded JavaScript highlighted too.";
+</script>`,
+        highlightLanguage: "xml",
+        previewClass: "language-html",
+        useVariableTagging: false,
+        defaultTokens: [
+          { id: "tag",        label: "Tag Names",         color: "#003f8c", italic: false, bold: true  },
+          { id: "attribute",  label: "Attributes",        color: "#7b00d4", italic: false, bold: false },
+          { id: "string",     label: "Strings",           color: "#0a7f2e", italic: false, bold: false },
+          { id: "comment",    label: "Comments",          color: "#999999", italic: true,  bold: false },
+          { id: "doctype",    label: "Doctype / Meta",    color: "#aa5500", italic: false, bold: false },
+          { id: "selector",   label: "CSS Selectors",     color: "#0055bb", italic: false, bold: false },
+          { id: "property",   label: "Properties",        color: "#7b00d4", italic: false, bold: false },
+          { id: "keyword",    label: "Keywords",          color: "#0000ff", italic: false, bold: true  },
+          { id: "built_in",   label: "Built-ins",         color: "#008080", italic: false, bold: false },
+          { id: "literal",    label: "Literals",          color: "#0055bb", italic: false, bold: true  },
+          { id: "number",     label: "Numbers",           color: "#e06c00", italic: false, bold: false },
+          { id: "title",      label: "Functions / Titles",color: "#6a3dad", italic: false, bold: false },
+          { id: "variable",   label: "Variables",         color: "#800080", italic: false, bold: false },
+          { id: "operator",   label: "Operators",         color: "#555555", italic: false, bold: false },
+          { id: "punctuation",label: "Punctuation",       color: "#555555", italic: false, bold: false },
+        ],
+        classMap: {
+          "hljs-tag":             "tag",
+          "hljs-name":            "tag",
+          "hljs-attr":            "attribute",
+          "hljs-string":          "string",
+          "hljs-comment":         "comment",
+          "hljs-meta":            "doctype",
+          "hljs-doctag":          "doctype",
+          "hljs-selector-tag":    "selector",
+          "hljs-selector-class":  "selector",
+          "hljs-selector-id":     "selector",
+          "hljs-selector-pseudo": "selector",
+          "hljs-property":        "property",
+          "hljs-keyword":         "keyword",
+          "hljs-built_in":        "built_in",
+          "hljs-literal":         "literal",
+          "hljs-number":          "number",
+          "hljs-title":           "title",
+          "hljs-title function_": "title",
+          "hljs-variable":        "variable",
+          "hljs-variable language_":"variable",
+          "hljs-operator":        "operator",
+          "hljs-punctuation":     "punctuation",
+          "hljs-params":          "variable",
+        },
       }
     };
+
+    const THEMES = {
+      dark: {
+        bgColor: "#1e1e1e",
+        defaultColor: "#d4d4d4",
+        tokens: {
+          python: {
+            keyword: { color: "#569cd6", bold: true,  italic: false },
+            built_in:{ color: "#4ec9b0", bold: false, italic: false },
+            string:  { color: "#ce9178", bold: false, italic: false },
+            number:  { color: "#b5cea8", bold: false, italic: false },
+            comment: { color: "#6a9955", bold: false, italic: true  },
+            decorator:{color: "#dcdcaa", bold: false, italic: false },
+            title:   { color: "#dcdcaa", bold: false, italic: false },
+            params:  { color: "#9cdcfe", bold: false, italic: false },
+            operator:{ color: "#d4d4d4", bold: false, italic: false },
+            punctuation:{ color: "#d4d4d4", bold: false, italic: false },
+            literal: { color: "#569cd6", bold: true,  italic: false },
+            variable:{ color: "#9cdcfe", bold: false, italic: false },
+          },
+          html: {
+            tag:      { color: "#4fc1ff", bold: true,  italic: false },
+            attribute:{ color: "#9cdcfe", bold: false, italic: false },
+            string:   { color: "#ce9178", bold: false, italic: false },
+            comment:  { color: "#6a9955", bold: false, italic: true  },
+            doctype:  { color: "#c586c0", bold: false, italic: false },
+            selector: { color: "#d7ba7d", bold: false, italic: false },
+            property: { color: "#4ec9b0", bold: false, italic: false },
+            keyword:  { color: "#569cd6", bold: true,  italic: false },
+            built_in: { color: "#4ec9b0", bold: false, italic: false },
+            literal:  { color: "#569cd6", bold: true,  italic: false },
+            number:   { color: "#b5cea8", bold: false, italic: false },
+            title:    { color: "#dcdcaa", bold: false, italic: false },
+            variable: { color: "#9cdcfe", bold: false, italic: false },
+            operator: { color: "#d4d4d4", bold: false, italic: false },
+            punctuation:{ color: "#d4d4d4", bold: false, italic: false },
+          },
+        },
+      },
+      corporate: {
+        bgColor: "#f8f9fa",
+        defaultColor: "#212529",
+        tokens: {
+          python: {
+            keyword: { color: "#0050af", bold: true,  italic: false },
+            built_in:{ color: "#005f73", bold: false, italic: false },
+            string:  { color: "#2d6a4f", bold: false, italic: false },
+            number:  { color: "#c77b00", bold: false, italic: false },
+            comment: { color: "#6c757d", bold: false, italic: true  },
+            decorator:{color: "#7c3e00", bold: false, italic: false },
+            title:   { color: "#4a0e8f", bold: false, italic: false },
+            params:  { color: "#343a40", bold: false, italic: false },
+            operator:{ color: "#495057", bold: false, italic: false },
+            punctuation:{ color: "#495057", bold: false, italic: false },
+            literal: { color: "#0050af", bold: true,  italic: false },
+            variable:{ color: "#6b2fbd", bold: false, italic: false },
+          },
+          html: {
+            tag:      { color: "#0050af", bold: true,  italic: false },
+            attribute:{ color: "#4a0e8f", bold: false, italic: false },
+            string:   { color: "#2d6a4f", bold: false, italic: false },
+            comment:  { color: "#6c757d", bold: false, italic: true  },
+            doctype:  { color: "#7c3e00", bold: false, italic: false },
+            selector: { color: "#005f73", bold: false, italic: false },
+            property: { color: "#005f73", bold: false, italic: false },
+            keyword:  { color: "#0050af", bold: true,  italic: false },
+            built_in: { color: "#005f73", bold: false, italic: false },
+            literal:  { color: "#0050af", bold: true,  italic: false },
+            number:   { color: "#c77b00", bold: false, italic: false },
+            title:    { color: "#4a0e8f", bold: false, italic: false },
+            variable: { color: "#6b2fbd", bold: false, italic: false },
+            operator: { color: "#495057", bold: false, italic: false },
+            punctuation:{ color: "#495057", bold: false, italic: false },
+          },
+        },
+      },
+      fun: {
+        bgColor: "#2b213a",
+        defaultColor: "#f0e6ff",
+        tokens: {
+          python: {
+            keyword: { color: "#ff6eb4", bold: true,  italic: false },
+            built_in:{ color: "#79ffed", bold: false, italic: false },
+            string:  { color: "#ffe66d", bold: false, italic: false },
+            number:  { color: "#ff9a3c", bold: false, italic: false },
+            comment: { color: "#a89bb9", bold: false, italic: true  },
+            decorator:{color: "#ff6eb4", bold: false, italic: false },
+            title:   { color: "#79ffed", bold: false, italic: false },
+            params:  { color: "#f0e6ff", bold: false, italic: false },
+            operator:{ color: "#ff6eb4", bold: false, italic: false },
+            punctuation:{ color: "#c3b1e1", bold: false, italic: false },
+            literal: { color: "#ff9a3c", bold: true,  italic: false },
+            variable:{ color: "#c8ff74", bold: false, italic: false },
+          },
+          html: {
+            tag:      { color: "#79ffed", bold: true,  italic: false },
+            attribute:{ color: "#ff6eb4", bold: false, italic: false },
+            string:   { color: "#ffe66d", bold: false, italic: false },
+            comment:  { color: "#a89bb9", bold: false, italic: true  },
+            doctype:  { color: "#ff9a3c", bold: false, italic: false },
+            selector: { color: "#c8ff74", bold: false, italic: false },
+            property: { color: "#79ffed", bold: false, italic: false },
+            keyword:  { color: "#ff6eb4", bold: true,  italic: false },
+            built_in: { color: "#79ffed", bold: false, italic: false },
+            literal:  { color: "#ff9a3c", bold: true,  italic: false },
+            number:   { color: "#ff9a3c", bold: false, italic: false },
+            title:    { color: "#79ffed", bold: false, italic: false },
+            variable: { color: "#c8ff74", bold: false, italic: false },
+            operator: { color: "#ff6eb4", bold: false, italic: false },
+            punctuation:{ color: "#c3b1e1", bold: false, italic: false },
+          },
+        },
+      },
+    };
+
+    const languageState = {};
+    Object.keys(LANGUAGE_CONFIG).forEach(lang => {
+      languageState[lang] = {
+        input: LANGUAGE_CONFIG[lang].demoSnippet,
+        tokens: LANGUAGE_CONFIG[lang].defaultTokens.map(t => ({ ...t })),
+      };
+    });
+
+    let activeLanguage = "python";
+
+    function getActiveConfig() { return LANGUAGE_CONFIG[activeLanguage]; }
+    function getActiveState() { return languageState[activeLanguage]; }
+    function getActiveTokens() { return getActiveState().tokens; }
+    function getActiveClassMap() { return getActiveConfig().classMap; }
 
     function applyTheme(name) {
       const theme = THEMES[name];
       if (!theme) return;
+      const activeTheme = theme.tokens[activeLanguage] || {};
       syncColorInputs("bg-color", "bg-color-hex", theme.bgColor);
       syncColorInputs("default-color", "default-color-hex", theme.defaultColor);
-      tokens.forEach(tok => {
-        const th = theme.tokens[tok.id];
-        if (th) { tok.color = th.color; tok.bold = th.bold; tok.italic = th.italic; }
+      getActiveTokens().forEach(tok => {
+        const th = activeTheme[tok.id];
+        if (th) {
+          tok.color = th.color;
+          tok.bold = th.bold;
+          tok.italic = th.italic;
+        }
       });
       buildTokenColorRows();
       refreshPreview();
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
     function isValidHex(h) { return /^#[0-9a-fA-F]{6}$/.test(h); }
 
     function syncColorInputs(colorId, hexId, value) {
@@ -397,10 +591,10 @@
       });
     }
 
-    // ── Build token color rows ────────────────────────────────────────────────
     function buildTokenColorRows() {
       const container = document.getElementById("token-colors");
       container.innerHTML = "";
+      const tokens = getActiveTokens();
       tokens.forEach(tok => {
         const row = document.createElement("div");
         row.className = "setting-row";
@@ -421,51 +615,24 @@
       });
     }
 
-    // ── Map highlight.js class names to token ids ─────────────────────────────
-    // highlight.js wraps tokens in <span class="hljs-*"> elements.
-    // We map those to our token ids.
-    const CLASS_MAP = {
-      "hljs-keyword":      "keyword",
-      "hljs-built_in":     "built_in",
-      "hljs-string":       "string",
-      "hljs-number":       "number",
-      "hljs-comment":      "comment",
-      "hljs-meta":         "decorator", // @decorator lines
-      "hljs-title":        "title",
-      "hljs-title function_": "title",
-      "hljs-params":       "params",
-      "hljs-operator":     "operator",
-      "hljs-punctuation":  "punctuation",
-      "hljs-literal":      "literal",
-      // additional aliases
-      "hljs-attr":         "params",
-      "hljs-variable":     "variable",
-      "hljs-subst":        "string",   // f-string substitutions {var}
-    };
-
     function tokenForClass(cls) {
-      const key = cls.trim();
-      const id  = CLASS_MAP[key];
-      return id ? tokens.find(t => t.id === id) : null;
+      const id = getActiveClassMap()[cls.trim()];
+      if (!id) return null;
+      return getActiveTokens().find(t => t.id === id) || null;
     }
 
-    // ── Sanitize input code ───────────────────────────────────────────────────
-    // Normalises common pasted-text artefacts before highlighting:
-    //   • non-breaking spaces → regular spaces
-    //   • tab characters      → 4 regular spaces
-    //   • smart/curly quotes  → straight quotes
     function sanitizeCode(code) {
       return code
-        .replace(/\u00A0/g, " ")          // non-breaking space → space
-        .replace(/\t/g, "    ")            // tab → 4 spaces
-        .replace(/[\u201C\u201D]/g, '"')   // left/right double quotation marks → "
-        .replace(/[\u2018\u2019]/g, "'");  // left/right single quotation marks → '
+        .replace(/\u00A0/g, " ")
+        .replace(/\t/g, "    ")
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/[\u2018\u2019]/g, "'");
     }
 
-    // ── Highlight and render ──────────────────────────────────────────────────
     function highlight(code) {
-      const hlHtml = hljs.highlight(sanitizeCode(code), { language: "python" }).value;
-      return tagVariables(hlHtml);
+      const config = getActiveConfig();
+      const hlHtml = hljs.highlight(sanitizeCode(code), { language: config.highlightLanguage }).value;
+      return config.useVariableTagging ? tagVariables(hlHtml) : hlHtml;
     }
 
     // Post-process highlighted HTML to tag untagged identifiers as variables.
@@ -577,21 +744,25 @@
     }
 
     // ── Live preview (uses CSS classes + dynamic <style>) ─────────────────────
+    function classKeyToSelector(classKey) {
+      return classKey.trim().split(/\s+/).map(c => `.${c}`).join("");
+    }
+
     function buildPreviewStyle(settings) {
       const { fontFamily, fontSize, bgColor, defaultColor } = settings;
       let css = `
         #preview-wrap pre { background: ${bgColor}; }
         #preview { font-family: ${fontFamily}, monospace; font-size: ${fontSize}px; color: ${defaultColor}; }
       `;
-      tokens.forEach(tok => {
-        // highlight.js may assign multiple classes on one span
-        css += `#preview .hljs-${tok.id} { color: ${tok.color}; `;
+      const tokensById = Object.fromEntries(getActiveTokens().map(t => [t.id, t]));
+      Object.entries(getActiveClassMap()).forEach(([classKey, tokenId]) => {
+        const tok = tokensById[tokenId];
+        if (!tok) return;
+        css += `#preview ${classKeyToSelector(classKey)} { color: ${tok.color}; `;
         if (tok.bold)   css += "font-weight:bold; ";
         if (tok.italic) css += "font-style:italic; ";
         css += "}\n";
       });
-      // Special two-class selector for function names
-      css += `#preview .hljs-title.function_ { color: ${tokens.find(t=>t.id==="title")?.color ?? "#7b00d4"}; }\n`;
       return css;
     }
 
@@ -606,6 +777,7 @@
 
     function refreshPreview() {
       const code = document.getElementById("input").value;
+      getActiveState().input = code;
       const settings = getSettings();
       applyPreviewStyle(settings);
 
@@ -675,6 +847,10 @@
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") refreshPreview();
     });
 
+    document.getElementById("input").addEventListener("input", (e) => {
+      getActiveState().input = e.target.value;
+    });
+
     // ── Settings change listeners ─────────────────────────────────────────────
     ["font-family", "font-size"].forEach(id => {
       document.getElementById(id).addEventListener("input", refreshPreview);
@@ -685,7 +861,7 @@
 
     // ── Reset colors ──────────────────────────────────────────────────────────
     document.getElementById("btn-reset-colors").addEventListener("click", () => {
-      tokens = DEFAULT_TOKENS.map(t => ({ ...t }));
+      getActiveState().tokens = getActiveConfig().defaultTokens.map(t => ({ ...t }));
       buildTokenColorRows();
       refreshPreview();
     });
@@ -695,14 +871,39 @@
       document.getElementById(`btn-theme-${name}`).addEventListener("click", () => applyTheme(name));
     });
 
-    // ── Init ──────────────────────────────────────────────────────────────────
-    buildTokenColorRows();
+    function syncLanguageUI() {
+      const config = getActiveConfig();
+      const inputEl = document.getElementById("input");
+      const previewEl = document.getElementById("preview");
+
+      document.getElementById("app-title").textContent = config.appTitle;
+      document.getElementById("input-panel-title").textContent = config.inputPanelTitle;
+      document.getElementById("token-colors-title").textContent = config.tokenColorsTitle;
+      inputEl.placeholder = config.placeholder;
+      inputEl.value = getActiveState().input;
+      previewEl.className = config.previewClass;
+      buildTokenColorRows();
+    }
+
+    function setActiveLanguage(language) {
+      if (!LANGUAGE_CONFIG[language] || language === activeLanguage) return;
+      getActiveState().input = document.getElementById("input").value;
+      activeLanguage = language;
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        const isActive = btn.dataset.language === language;
+        btn.classList.toggle("active", isActive);
+        btn.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+      syncLanguageUI();
+      refreshPreview();
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => setActiveLanguage(btn.dataset.language));
+    });
+
+    syncLanguageUI();
     applyPreviewStyle(getSettings());
-
-    // Pre-populate with a demo snippet
-    document.getElementById("input").value = `# Hello, World!
-print("Hello, World!")`;
-
     refreshPreview();
   </script>
 </body>
