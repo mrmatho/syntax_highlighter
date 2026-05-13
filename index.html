@@ -751,8 +751,9 @@ print("Hello, World!")`,
         }
         const escaped = c.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
         if (/^[0-9]/.test(escaped)) {
-          const firstHex = escaped.codePointAt(0).toString(16).toUpperCase();
-          return `.\\${firstHex} ${escaped.slice(1)}`;
+          const firstHex = c.codePointAt(0).toString(16).toUpperCase();
+          const safeRest = c.slice(1).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+          return `.\\${firstHex} ${safeRest}`;
         }
         return `.${escaped}`;
       }).join("");
@@ -897,7 +898,8 @@ print("Hello, World!")`,
 
     function setActiveLanguage(language) {
       if (!LANGUAGE_CONFIG[language]) {
-        console.warn(`Unknown language tab: ${language}. Supported languages: python, html`);
+        const supported = Object.keys(LANGUAGE_CONFIG).join(", ");
+        console.warn(`Unknown language tab: ${language}. Supported languages: ${supported}`);
         return;
       }
       if (language === activeLanguage) return;
