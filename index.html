@@ -214,7 +214,7 @@
   </style>
 </head>
 <body>
-  <h1 id="app-title">Syntax Highlighter—Python</h1>
+  <h1 id="app-title">Syntax Highlighter: Python</h1>
   <div class="tabs" role="tablist" aria-label="Language Workspace Tabs">
     <button class="tab-btn active" id="tab-python" data-language="python" role="tab" aria-selected="true">Python</button>
     <button class="tab-btn" id="tab-html" data-language="html" role="tab" aria-selected="false">HTML</button>
@@ -309,7 +309,7 @@
     const LANGUAGE_CONFIG = {
       python: {
         label: "Python",
-        appTitle: "Syntax Highlighter—Python",
+        appTitle: "Syntax Highlighter: Python",
         inputPanelTitle: "Paste Python Code",
         tokenColorsTitle: "Python Token Colors",
         placeholder: "# Paste your Python code here\ndef hello(name):\n    print(f'Hello, {name}!')",
@@ -352,7 +352,7 @@ print("Hello, World!")`,
       },
       html: {
         label: "HTML",
-        appTitle: "Syntax Highlighter—HTML",
+        appTitle: "Syntax Highlighter: HTML",
         inputPanelTitle: "Paste HTML Code",
         tokenColorsTitle: "HTML/CSS/JS Token Colors",
         placeholder: "<!-- Paste your HTML code here -->\n<div class=\"card\">Hello</div>",
@@ -749,7 +749,11 @@ print("Hello, World!")`,
         if (window.CSS && typeof window.CSS.escape === "function") {
           return `.${window.CSS.escape(c)}`;
         }
-        return `.${c.replace(/[^a-zA-Z0-9_-]/g, "\\$&")}`;
+        const escaped = c.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
+        if (/^[0-9-]/.test(escaped)) {
+          return `.\\3${escaped.charAt(0)} ${escaped.slice(1)}`;
+        }
+        return `.${escaped}`;
       }).join("");
     }
 
@@ -892,7 +896,7 @@ print("Hello, World!")`,
 
     function setActiveLanguage(language) {
       if (!LANGUAGE_CONFIG[language]) {
-        console.warn(`Unknown language tab: ${language}`);
+        console.warn(`Unknown language tab: ${language}. Supported languages: python, html`);
         return;
       }
       if (language === activeLanguage) return;
