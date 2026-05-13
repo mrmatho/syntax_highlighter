@@ -214,7 +214,7 @@
   </style>
 </head>
 <body>
-  <h1 id="app-title">Syntax Highlighter — Python</h1>
+  <h1 id="app-title">Syntax Highlighter—Python</h1>
   <div class="tabs" role="tablist" aria-label="Language Workspace Tabs">
     <button class="tab-btn active" id="tab-python" data-language="python" role="tab" aria-selected="true">Python</button>
     <button class="tab-btn" id="tab-html" data-language="html" role="tab" aria-selected="false">HTML</button>
@@ -309,7 +309,7 @@
     const LANGUAGE_CONFIG = {
       python: {
         label: "Python",
-        appTitle: "Syntax Highlighter — Python",
+        appTitle: "Syntax Highlighter—Python",
         inputPanelTitle: "Paste Python Code",
         tokenColorsTitle: "Python Token Colors",
         placeholder: "# Paste your Python code here\ndef hello(name):\n    print(f'Hello, {name}!')",
@@ -352,7 +352,7 @@ print("Hello, World!")`,
       },
       html: {
         label: "HTML",
-        appTitle: "Syntax Highlighter — HTML",
+        appTitle: "Syntax Highlighter—HTML",
         inputPanelTitle: "Paste HTML Code",
         tokenColorsTitle: "HTML/CSS/JS Token Colors",
         placeholder: "<!-- Paste your HTML code here -->\n<div class=\"card\">Hello</div>",
@@ -745,7 +745,12 @@ print("Hello, World!")`,
 
     // ── Live preview (uses CSS classes + dynamic <style>) ─────────────────────
     function classKeyToSelector(classKey) {
-      return classKey.trim().split(/\s+/).map(c => `.${c}`).join("");
+      return classKey.trim().split(/\s+/).map(c => {
+        if (window.CSS && typeof window.CSS.escape === "function") {
+          return `.${window.CSS.escape(c)}`;
+        }
+        return `.${c.replace(/[^a-zA-Z0-9_-]/g, "\\$&")}`;
+      }).join("");
     }
 
     function buildPreviewStyle(settings) {
@@ -886,7 +891,11 @@ print("Hello, World!")`,
     }
 
     function setActiveLanguage(language) {
-      if (!LANGUAGE_CONFIG[language] || language === activeLanguage) return;
+      if (!LANGUAGE_CONFIG[language]) {
+        console.warn(`Unknown language tab: ${language}`);
+        return;
+      }
+      if (language === activeLanguage) return;
       getActiveState().input = document.getElementById("input").value;
       activeLanguage = language;
       document.querySelectorAll(".tab-btn").forEach(btn => {
