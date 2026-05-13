@@ -750,8 +750,9 @@ print("Hello, World!")`,
           return `.${window.CSS.escape(c)}`;
         }
         const escaped = c.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
-        if (/^[0-9-]/.test(escaped)) {
-          return `.\\3${escaped.charAt(0)} ${escaped.slice(1)}`;
+        if (/^[0-9]/.test(escaped)) {
+          const firstHex = escaped.codePointAt(0).toString(16).toUpperCase();
+          return `.\\${firstHex} ${escaped.slice(1)}`;
         }
         return `.${escaped}`;
       }).join("");
